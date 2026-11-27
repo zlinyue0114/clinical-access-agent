@@ -77,6 +77,14 @@ phrasings per finding. The impression states the recommendation in about 70% of
 reports that need follow-up; in the rest the reader has to infer it from the
 findings, so keyword matching alone is not enough.
 
+Like real reports, every report starts with an identifying header line (name, date
+of birth, record number and sometimes insurance number, in several layouts), and
+about a quarter end with a sentence that mentions the patient by title and surname.
+These are drawn from a separate random stream (generator version 2), so findings,
+labels and injection assignment are identical to version 1. The gateway must remove
+them before text leaves the security boundary; a generator test guarantees they are
+present, so de-identification tests cannot pass vacuously.
+
 ## Injection corpus
 
 About 20% of reports contain one adversarial instruction from

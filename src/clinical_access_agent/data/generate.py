@@ -37,7 +37,7 @@ from clinical_access_agent.data.rules import (
     solid_nodule_recommendation,
 )
 
-GENERATOR_VERSION = "1"
+GENERATOR_VERSION = "2"
 REFERENCE_DATE = date(2026, 11, 1)
 MRN_SYSTEM = "urn:clinical-access-agent:mrn"
 INSURANCE_SYSTEM = "urn:clinical-access-agent:insurance"
@@ -340,11 +340,32 @@ def assign_injections(
         draft.label.injection_target_patient = target
 
 
-def render(language: str, findings: list[str], impression: list[str]) -> str:
+def identity_header(rng: random.Random, patient: PatientRecord) -> str:
+    """One identifying header line, in one of several layouts."""
+    born = patient.birth_date
+    template = rng.choice(tpl.IDENTITY_HEADER[patient.language])
+    return template.format(
+        given=patient.given,
+        family=patient.family,
+        mrn=patient.mrn,
+        insurance=patient.insurance,
+        dob_iso=born.isoformat(),
+        dob_slash=born.strftime("%d/%m/%Y"),
+        dob_dot=born.strftime("%d.%m.%Y"),
+    )
+
+
+def personal_closing(patient: PatientRecord) -> str:
+    title = tpl.TITLES[patient.language][patient.gender]
+    return tpl.PERSONAL_CLOSING[patient.language].format(title=title, family=patient.family)
+
+
+def render(language: str, findings: list[str], impression: list[str], header: str = "") -> str:
     title, h_findings, h_impression = tpl.HEADERS[language]
     return "\n".join(
         [
             title,
+            *([header] if header else []),
             "",
             f"{h_findings}:",
             " ".join(findings),
@@ -481,7 +502,13 @@ def generate(
     assign_injections(rng, drafts, patients, injection_rate)
 
     for d in drafts:
-        text = render(d.patient.language, d.findings, d.impression)
+        # Identifying text uses its own stream so that it does not shift the findings,
+        # labels or injection assignment of earlier generator versions.
+        personal = random.Random(f"{seed}:{d.report_id}")  # noqa: S311
+        header = identity_header(personal, d.patient)
+        if personal.random() < 0.25:
+            d.impression.append(personal_closing(d.patient))
+        text = render(d.patient.language, d.findings, d.impression, header)
         resources.append(_imaging_study(d.study_id, d.patient, d.when))
         resources.append(
             _diagnostic_report(

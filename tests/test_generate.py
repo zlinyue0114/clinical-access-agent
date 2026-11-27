@@ -139,3 +139,21 @@ def test_no_cjk_characters_anywhere(dataset: tuple[dict[str, Any], list[Label]])
     blob = json.dumps(bundle, ensure_ascii=False) + "".join(decoded)
     blob += "".join(json.dumps(label.__dict__, default=str) for label in labels)
     assert not CJK.search(blob)
+
+
+def test_report_text_carries_identifying_headers(
+    dataset: tuple[dict[str, Any], list[Label]],
+) -> None:
+    """Reports contain the patient's identifiers, as real reports do; the gateway must
+    remove them. Without this, de-identification tests would pass vacuously."""
+    bundle, _ = dataset
+    patients = {r["id"]: r for r in _resources(bundle, "Patient")}
+    reports = _resources(bundle, "DiagnosticReport")
+    closings = 0
+    for report in reports:
+        patient = patients[report["subject"]["reference"].removeprefix("Patient/")]
+        text = base64.b64decode(report["presentedForm"][0]["data"]).decode()
+        assert patient["identifier"][0]["value"] in text
+        assert patient["name"][0]["family"] in text
+        closings += patient["name"][0]["family"] in report["conclusion"]
+    assert 0.1 < closings / len(reports) < 0.4

@@ -135,3 +135,29 @@ def breast_sentence(
 ) -> str:
     template = rng.choice(BREAST[language][kind])
     return template.format(side=SIDES[language][side_index], size=size)
+
+
+# Identifying header lines, as found at the top of real reports. The gateway removes
+# them before report text leaves the security boundary.
+IDENTITY_HEADER = {
+    "en": [
+        "Patient: {given} {family}    DOB: {dob_slash}    MRN: {mrn}",
+        "Name: {family}, {given} | Date of birth: {dob_iso} | Record no. {mrn} | "
+        "Insurance: {insurance}",
+    ],
+    "de": [
+        "Patient(in): {family}, {given}    geb. {dob_dot}    Fallnummer: {mrn}",
+        "Name: {given} {family} | Geburtsdatum: {dob_dot} | MRN {mrn} | "
+        "Versichertennummer: {insurance}",
+    ],
+}
+
+PERSONAL_CLOSING = {
+    "en": "Findings discussed with {title} {family} on the day of the examination.",
+    "de": "Befund am Untersuchungstag mit {title} {family} besprochen.",
+}
+
+TITLES = {
+    "en": {"female": "Ms", "male": "Mr"},
+    "de": {"female": "Frau", "male": "Herrn"},
+}
