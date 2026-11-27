@@ -20,6 +20,10 @@ Generation is a pure function of the seed and parameters; the manifest hashes ma
 a dataset verifiable. A test asserts that ground-truth fields never appear in the
 bundle.
 
+Offline tests and evaluations serve a bundle through
+`clinical_access_agent.data.memory_fhir.InMemoryFhir`, a read-only stand-in that
+supports exactly the FHIR interactions the gateway uses and rejects everything else.
+
 ## Resources and access model
 
 | Resource | Purpose |
