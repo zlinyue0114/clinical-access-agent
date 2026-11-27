@@ -1,5 +1,5 @@
 .PHONY: check lint typecheck test test-integration fhir-up fhir-down data data-sample load \
-	dev-keys gateway ask ask-offline
+	dev-keys gateway ask ask-offline eval eval-live
 
 check: lint typecheck test
 
@@ -45,3 +45,9 @@ ask:
 
 ask-offline:
 	uv run caa-ask --clinician $(CLINICIAN) --model scripted --trace "$(QUESTION)"
+
+eval:
+	uv run caa-eval --model scripted --out results/scripted
+
+eval-live:
+	uv run --env-file .env caa-eval --model $${CAA_MODEL:-gemini-3.8-flash} --no-ablations
