@@ -7,18 +7,20 @@ attempt, and that the gateway holds even with every agent-side layer off.
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 from collections.abc import AsyncGenerator
 from typing import Any
 
+import pytest
 from google.adk.models.base_llm import BaseLlm
 from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 
 from clinical_access_agent.agent.agent import AgentResult, ask
-from clinical_access_agent.agent.guard import SessionGuard
+from clinical_access_agent.agent.guard import READ_TOOLS, Event, SessionGuard
 from clinical_access_agent.agent.stub import ScriptedModel
 from clinical_access_agent.agent.telemetry import CONTENT_CAPTURE_VARIABLES
 from tests.agent.conftest import CLINICIAN, Connect, Stack
@@ -31,6 +33,10 @@ async def _run(
 ) -> AgentResult:
     async with connect(deidentify_text=gateway_deid) as client:
         return await ask(QUESTION, client, model=model, guard=SessionGuard(**guard))
+
+
+def _record_access(result: AgentResult) -> list[Event]:
+    return [e for e in result.events if e.tool in READ_TOOLS]
 
 
 _IDENTIFIER_SHAPE = re.compile(r"\b[A-Za-z]{2,6}-\d{3,}\b")
@@ -114,6 +120,16 @@ async def test_tampering_does_not_suppress_required_follow_up(
     assert all(decided[r] == "required" for r in tampered)
 
 
+async def test_write_attempts_find_no_tool(connect: Connect, stack: Stack) -> None:
+    result = await _run(
+        connect, ScriptedModel(obedient=True), gateway_deid=False, screen_content=False
+    )
+    attempts = [e for e in result.events if e.tool == "update_report_status"]
+    assert attempts
+    assert {e.detail.get("reason") for e in attempts} == {"tool_not_allowed"}
+    assert all(r["method"] == "GET" or r["action"] == "follow_up.prepare" for r in stack.audit())
+
+
 async def test_planted_identifiers_never_reach_the_model(connect: Connect, stack: Stack) -> None:
     model = RecordingModel(obedient=True)
     model.seen.clear()
@@ -128,8 +144,8 @@ async def test_agent_redaction_covers_a_gateway_without_deidentification(
     result = await _run(
         connect, ScriptedModel(obedient=True), gateway_deid=False, screen_content=False
     )
-    assert result.events and any(e.kind == "identifiers_redacted" for e in result.events)
-    assert not [e for e in result.events if e.kind in ("tool_blocked", "gateway_denied")]
+    assert any(e.kind == "identifiers_redacted" for e in result.events)
+    assert not [e for e in _record_access(result) if e.kind in ("tool_blocked", "gateway_denied")]
 
 
 async def test_reference_policy_stops_planted_identifiers(connect: Connect, stack: Stack) -> None:
@@ -140,10 +156,10 @@ async def test_reference_policy_stops_planted_identifiers(connect: Connect, stac
         screen_content=False,
         redact_identifiers=False,
     )
-    blocked = [e for e in result.events if e.kind == "tool_blocked"]
+    blocked = [e for e in _record_access(result) if e.kind == "tool_blocked"]
     assert blocked
     assert {e.detail["reason"] for e in blocked} == {"unknown_patient_reference"}
-    assert not [e for e in result.events if e.kind == "gateway_denied"]
+    assert not [e for e in _record_access(result) if e.kind == "gateway_denied"]
     planted = {e.detail["patient"] for e in blocked}
     assert all(r["resource"] not in planted for r in stack.audit())
 
@@ -157,7 +173,7 @@ async def test_gateway_holds_with_every_agent_layer_off(connect: Connect, stack:
         redact_identifiers=False,
         enforce_references=False,
     )
-    attempts = {e.detail["patient"] for e in result.events if e.kind == "gateway_denied"}
+    attempts = {e.detail["patient"] for e in _record_access(result) if e.kind == "gateway_denied"}
     assert attempts
     assert not attempts & stack.panel()
     denials = [r for r in stack.audit() if r["resource"] in attempts]
@@ -239,3 +255,11 @@ def test_content_capture_is_disabled_after_building(connect: Connect) -> None:
         os.environ[name] = "true"
     build_agent(None, SessionGuard(), TriageRecord(), model=ScriptedModel())  # type: ignore[arg-type]
     assert all(os.environ[name] == "false" for name in CONTENT_CAPTURE_VARIABLES)
+
+
+async def test_scripted_runs_log_no_warnings(
+    connect: Connect, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.WARNING):
+        await _run(connect, ScriptedModel())
+    assert not [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
