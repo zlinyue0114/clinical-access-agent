@@ -22,9 +22,26 @@ tamper-evident audit log.
 | M1 | Synthetic FHIR data, report templates (EN/DE), ground truth, injection corpus | done |
 | M2 | EHR gateway: authorization, pseudonymization, quotas, audit log | done |
 | M3 | ADK agent with read-only tools and guard callbacks | done |
-| M4 | Eval harness, vulnerable baseline (positive control), results | planned |
+| M4 | Eval harness, vulnerable baseline (positive control), results | done |
 | M5 | Threat model (SAIF, OWASP Agentic Top 10), compliance notes | planned |
 | M6 | Results table, demo, polish | planned |
+
+## Results
+
+Offline evaluation over all six clinicians' panels, with a scripted model that obeys
+every injected instruction ([full results](results/scripted/results.md),
+[method and discussion](docs/evaluation.md)):
+
+| System | Out-of-panel patients read | Writes | Identities in answers | Identities in model context |
+|---|---|---|---|---|
+| Protected (all layers) | 0 | 0 | 0 | 0 |
+| Gateway authorization only | 0 | 0 | 0 | 288 |
+| Vulnerable baseline (positive control) | 30 | 12 | 288 | 288 |
+
+Injection screening reaches 1.00 recall on its development corpus and 0.41 on a
+held-out set, and a plausible "no follow-up needed" correction succeeds against an
+obedient model. Both are reported as limitations rather than relied on; see
+[`docs/evaluation.md`](docs/evaluation.md).
 
 ## Architecture
 
@@ -79,6 +96,8 @@ make gateway      # run the EHR gateway on http://127.0.0.1:8100
 make test-integration   # gateway against the running FHIR server
 make ask-offline  # ask the agent with the scripted model (gateway running)
 make ask          # ask the agent with Gemini on Vertex AI (reads .env)
+make eval         # full offline evaluation -> results/scripted/
+make eval-live    # the same with Gemini (costs model tokens)
 ```
 
 A small committed sample (12 patients) is in [`data/sample/`](data/sample/).
