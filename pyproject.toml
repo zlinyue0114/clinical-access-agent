@@ -26,6 +26,7 @@ dev = [
 caa-gateway = "clinical_access_agent.gateway.__main__:main"
 caa-token = "clinical_access_agent.gateway.tokens:main"
 caa-audit = "clinical_access_agent.gateway.audit:main"
+caa-ask = "clinical_access_agent.agent.__main__:main"
 
 [build-system]
 requires = ["hatchling"]

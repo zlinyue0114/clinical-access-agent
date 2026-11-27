@@ -1,5 +1,5 @@
 .PHONY: check lint typecheck test test-integration fhir-up fhir-down data data-sample load \
-	dev-keys gateway
+	dev-keys gateway ask ask-offline
 
 check: lint typecheck test
 
@@ -36,3 +36,12 @@ dev-keys:
 
 gateway:
 	uv run caa-gateway
+
+CLINICIAN ?= prac-01
+QUESTION ?= Which of my patients' chest CT reports need follow-up?
+
+ask:
+	uv run --env-file .env caa-ask --clinician $(CLINICIAN) --trace "$(QUESTION)"
+
+ask-offline:
+	uv run caa-ask --clinician $(CLINICIAN) --model scripted --trace "$(QUESTION)"
