@@ -1,5 +1,5 @@
 .PHONY: check lint typecheck test test-integration fhir-up fhir-down data data-sample load \
-	dev-keys gateway ask ask-offline eval eval-live
+	dev-keys gateway ask ask-offline eval eval-live demo
 
 check: lint typecheck test
 
@@ -51,3 +51,6 @@ eval:
 
 eval-live:
 	uv run --env-file .env caa-eval --model $${CAA_MODEL:-gemini-3.8-flash} --no-ablations
+
+demo:
+	uv run caa-demo
