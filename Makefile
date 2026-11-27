@@ -1,4 +1,5 @@
-.PHONY: check lint typecheck test fhir-up fhir-down data data-sample load
+.PHONY: check lint typecheck test test-integration fhir-up fhir-down data data-sample load \
+	dev-keys gateway
 
 check: lint typecheck test
 
@@ -26,3 +27,12 @@ data-sample:
 
 load:
 	uv run python -m clinical_access_agent.data.load --bundle data/generated/bundle.json --fhir http://127.0.0.1:8090/fhir
+
+test-integration:
+	uv run pytest -q -m integration
+
+dev-keys:
+	uv run caa-token keygen --dir .secrets
+
+gateway:
+	uv run caa-gateway
