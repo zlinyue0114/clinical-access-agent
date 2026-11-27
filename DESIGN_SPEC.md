@@ -48,7 +48,7 @@ The agent **may not**:
 | I1 | Clinician identity comes from a verified session token, never from model output or tool arguments. | Gateway |
 | I2 | Every record read is authorized against the clinician's care-team panel; anything that cannot be authorized is denied (fail-closed). Errors do not reveal resource existence or schema. | Gateway |
 | I3 | No tool can write, delete or export. The only consequential action yields a draft whose confirmation is bound to a hash of the exact content shown, single-use and expiring. | Tool set, gateway |
-| I4 | Data reaching the model is field-minimized and pseudonymized with a keyed function; the key never reaches the agent process. Re-identification happens only in the presentation layer for the authorized clinician. | Gateway |
+| I4 | Data reaching the model is field-minimized, its free text is de-identified, and references are pseudonymized with a keyed function; the key never reaches the agent process. Re-identification happens only in the presentation layer for the authorized clinician. | Gateway |
 | I5 | Tool results are untrusted input. They are screened for injected instructions; screening is defense in depth, never the boundary. | Agent callbacks |
 | I6 | Every access attempt, allowed or denied, is appended to a hash-chained audit log that can be verified offline. | Gateway |
 | I7 | Per-clinician quotas limit distinct patients accessed per time window, so split or bulk access is detected even when each call is individually allowed. | Gateway |

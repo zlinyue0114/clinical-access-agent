@@ -87,6 +87,7 @@ def create_app(
                 confirmations=ConfirmationStore(ttl=settings.confirmation_ttl, now=clock),
                 worklist=Worklist(settings.worklist_path, now=clock),
                 today=lambda: clock().date(),
+                deidentify_text=settings.deidentify_text,
             )
             yield
 

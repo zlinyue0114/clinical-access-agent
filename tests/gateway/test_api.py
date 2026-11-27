@@ -12,7 +12,8 @@ from fastapi.testclient import TestClient
 from clinical_access_agent.data.memory_fhir import InMemoryFhir
 from clinical_access_agent.gateway.app import create_app
 from clinical_access_agent.gateway.audit import AuditIntegrityError, verify
-from clinical_access_agent.gateway.config import Settings
+from clinical_access_agent.gateway.config import MRN_SYSTEM, Settings
+from clinical_access_agent.gateway.deid import deidentify, identity_of
 from clinical_access_agent.gateway.models import UNTRUSTED_NOTE
 from clinical_access_agent.gateway.pseudonym import Kind
 from clinical_access_agent.gateway.tokens import Audience, generate_keypair, issue
@@ -97,7 +98,11 @@ def test_report_text_is_returned_as_untrusted_content(
     assert body["content"]["trust"] == "untrusted"
     assert body["content"]["note"] == UNTRUSTED_NOTE
     source = world.resource("DiagnosticReport", injected.report_id)
-    assert body["content"]["text"] == base64.b64decode(source["presentedForm"][0]["data"]).decode()
+    raw = base64.b64decode(source["presentedForm"][0]["data"]).decode()
+    patient = world.resource("Patient", injected.patient_id)
+    expected, replaced = deidentify(raw, identity_of(patient, MRN_SYSTEM))
+    assert replaced > 0
+    assert body["content"]["text"] == expected
     assert set(body) == {"report", "patient", "date", "title", "status", "language", "content"}
     for value in _sensitive_values(world):
         assert value not in response.text
@@ -255,3 +260,36 @@ def test_audit_records_contain_no_record_content(
         assert value not in text
     for resource in world.resources("DiagnosticReport"):
         assert resource["conclusion"][:40] not in text
+
+
+def test_report_text_carries_no_identifiers_for_any_report(
+    client: TestClient, world: World, auth: Auth, alias: Alias
+) -> None:
+    sensitive = _sensitive_values(world)
+    for clinician in world.clinicians:
+        for patient in sorted(world.panels[clinician]):
+            p_ref = alias(clinician, Kind.PATIENT, patient)
+            for report in world.reports.get(patient, []):
+                r_ref = alias(clinician, Kind.REPORT, report)
+                response = client.get(
+                    f"/v1/patients/{p_ref}/reports/{r_ref}", headers=auth(clinician)
+                )
+                text = response.json()["content"]["text"]
+                assert not [v for v in sensitive if v in text], (patient, report)
+
+
+def test_identifier_check_detects_raw_text(
+    make_client: MakeClient, world: World, auth: Auth, alias: Alias
+) -> None:
+    """Positive control: without de-identification the same check must fail."""
+    client = make_client(deidentify_text=False)
+    clinician = world.clinicians[0]
+    patient = sorted(world.panels[clinician])[0]
+    report = world.reports[patient][0]
+    response = client.get(
+        f"/v1/patients/{alias(clinician, Kind.PATIENT, patient)}"
+        f"/reports/{alias(clinician, Kind.REPORT, report)}",
+        headers=auth(clinician),
+    )
+    resource = world.resource("Patient", patient)
+    assert resource["identifier"][0]["value"] in response.json()["content"]["text"]

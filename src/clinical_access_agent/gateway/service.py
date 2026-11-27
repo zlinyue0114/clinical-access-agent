@@ -16,6 +16,7 @@ from typing import Any
 from clinical_access_agent.gateway.actions import ConfirmationStore, Worklist
 from clinical_access_agent.gateway.authz import load_panel
 from clinical_access_agent.gateway.config import MRN_SYSTEM
+from clinical_access_agent.gateway.deid import deidentify, identity_of
 from clinical_access_agent.gateway.errors import Reason, not_found
 from clinical_access_agent.gateway.fhir import FhirClient
 from clinical_access_agent.gateway.models import (
@@ -56,6 +57,7 @@ class GatewayService:
         confirmations: ConfirmationStore,
         worklist: Worklist,
         today: Callable[[], date],
+        deidentify_text: bool = True,
     ) -> None:
         self._fhir = fhir
         self._pseudonyms = pseudonyms
@@ -63,6 +65,7 @@ class GatewayService:
         self._confirmations = confirmations
         self._worklist = worklist
         self._today = today
+        self._deidentify_text = deidentify_text
 
     async def list_patients(self, who: Principal) -> list[PatientSummary]:
         panel = await load_panel(self._fhir, who.clinician_id)
@@ -103,6 +106,12 @@ class GatewayService:
     ) -> ReportDetail:
         patient_id = await self._resolve_patient(who, patient_ref, ctx)
         report = await self._resolve_report(who, patient_id, report_ref)
+        text = _report_text(report)
+        if self._deidentify_text:
+            patient = await self._fhir.read("Patient", patient_id)
+            if patient is None:
+                raise not_found()
+            text, _ = deidentify(text, identity_of(patient, MRN_SYSTEM))
         return ReportDetail(
             report=report_ref,
             patient=patient_ref,
@@ -110,7 +119,7 @@ class GatewayService:
             title=_title(report),
             status=str(report.get("status", "unknown")),
             language=_report_language(report),
-            content=UntrustedText(text=_report_text(report)),
+            content=UntrustedText(text=text),
         )
 
     async def identity(
