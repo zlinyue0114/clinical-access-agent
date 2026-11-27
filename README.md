@@ -21,7 +21,7 @@ tamper-evident audit log.
 | M0 | Design spec, repository skeleton, CI | done |
 | M1 | Synthetic FHIR data, report templates (EN/DE), ground truth, injection corpus | done |
 | M2 | EHR gateway: authorization, pseudonymization, quotas, audit log | done |
-| M3 | ADK agent with read-only tools and guard callbacks | planned |
+| M3 | ADK agent with read-only tools and guard callbacks | done |
 | M4 | Eval harness, vulnerable baseline (positive control), results | planned |
 | M5 | Threat model (SAIF, OWASP Agentic Top 10), compliance notes | planned |
 | M6 | Results table, demo, polish | planned |
@@ -77,11 +77,14 @@ make load         # load the dataset into the FHIR server
 make dev-keys     # create local token and pseudonym keys in .secrets/
 make gateway      # run the EHR gateway on http://127.0.0.1:8100
 make test-integration   # gateway against the running FHIR server
+make ask-offline  # ask the agent with the scripted model (gateway running)
+make ask          # ask the agent with Gemini on Vertex AI (reads .env)
 ```
 
 A small committed sample (12 patients) is in [`data/sample/`](data/sample/).
 Dataset design, follow-up rules and the injection taxonomy: [`docs/data.md`](docs/data.md).
 Gateway endpoints, invariant enforcement and limitations: [`docs/gateway.md`](docs/gateway.md).
+Agent tools, guard layers and the scripted model: [`docs/agent.md`](docs/agent.md).
 
 Live runs use Gemini through Vertex AI; see `.env.example`. Offline tests and CI
 use a deterministic stub model and need no cloud access.
