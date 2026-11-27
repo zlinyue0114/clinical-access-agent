@@ -1,0 +1,7 @@
+services:
+  fhir:
+    image: hapiproject/hapi@sha256:08afec00897a5813b165ff2e8b03ca075986493518bd7a279b9f7c0b89de152f
+    ports:
+      - "127.0.0.1:8090:8080"
+    environment:
+      hapi.fhir.fhir_version: R4
