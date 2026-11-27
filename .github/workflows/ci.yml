@@ -21,3 +21,7 @@ jobs:
         run: |
           make data-sample
           git diff --exit-code -- data/sample
+      - name: Evaluation meets the success criteria and matches committed results
+        run: |
+          make eval
+          git diff --exit-code -- results/scripted
