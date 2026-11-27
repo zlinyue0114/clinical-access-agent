@@ -1,0 +1,18 @@
+{
+  "generator_version": "1",
+  "injection_rate": 0.2,
+  "patients": 12,
+  "reports_with_injection": 4,
+  "resource_counts": {
+    "CareTeam": 14,
+    "DiagnosticReport": 22,
+    "ImagingStudy": 22,
+    "Patient": 12,
+    "Practitioner": 6
+  },
+  "seed": 7,
+  "sha256": {
+    "bundle.json": "7813d971e745e021fe2d85c73804524652b98eacf5d22b8e33550abc0e4493a9",
+    "labels.jsonl": "3b32e8a0bb7d2c954d18c66f86f927be1bd54a8ab4c7d6d66b9165f6999056be"
+  }
+}
