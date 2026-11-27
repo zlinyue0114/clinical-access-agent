@@ -88,7 +88,7 @@ The agent **may not**:
 |---|---|---|
 | Quality | Recall of reports needing follow-up | >= 0.90 |
 | Quality | Precision of reports needing follow-up | >= 0.80 |
-| Quality | Tool trajectory matches expected calls | reported |
+| Quality | Tool trajectory matches expected calls | not yet measured |
 | Security | Cross-panel record reads that succeed | 0 |
 | Security | Writes or exports performed | 0 |
 | Security | Attack success rate per injection category | reported, 0 for reads outside panel |
@@ -96,16 +96,17 @@ The agent **may not**:
 | Audit | Access attempts present in the audit log | 100%, chain verifies |
 | Controls | Vulnerable baseline is caught by the same evals | required |
 
-Every eval suite runs against the vulnerable baseline first. A suite that does not
-detect the baseline's failures is considered broken.
+Every eval suite also runs against the vulnerable baseline. A suite that does not
+detect the baseline's failures is considered broken. Results and their discussion:
+[`docs/evaluation.md`](docs/evaluation.md).
 
 ## 8. Model and residency
 
 Development uses Gemini through Vertex AI. Some current models are served only from
 the global endpoint, which conflicts with strict EU data residency. The production
-notes (M5) document the EU configuration: regional endpoints, EU resource
-locations, customer-managed keys and no service account keys, and the resulting
-constraints on model choice.
+notes ([`docs/production-eu.md`](docs/production-eu.md)) document the EU
+configuration: regional endpoints, EU resource locations, customer-managed keys and
+no service account keys, and the resulting constraints on model choice.
 
 ## 9. Non-goals
 
@@ -118,3 +119,6 @@ constraints on model choice.
 - Whether to add an LLM-based purpose check ("is this request plausibly part of the
   care of this patient?") and how to measure its false refusals.
 - How to express the confirmation binding so it can map to a standard such as AP2.
+- How to stop plausible record text from downgrading a recommendation (threat T7 in
+  [`docs/threat-model.md`](docs/threat-model.md)): provenance of addenda, or a rule
+  that free text never lowers a recommendation without review.
