@@ -1,6 +1,6 @@
 """Screening of record text for embedded instructions (invariant I5).
 
-This is a heuristic, defence-in-depth layer. It is not the security boundary: the
+This is a heuristic, defense-in-depth layer. It is not the security boundary: the
 gateway denies out-of-panel reads and exposes no write or export endpoint whether or
 not screening catches an injection. Screening exists to keep instructions out of
 the model's context and to flag reports for human review, and its recall and false
@@ -55,7 +55,7 @@ _ADDRESSED = [
 
 _IDENTIFIER = re.compile(r"\b[A-Za-z]{2,6}-\d{3,}\b")
 _OTHER_PATIENT = [
-    # The gateway replaces identifiers it does not recognise as the patient's own
+    # The gateway replaces identifiers it does not recognize as the patient's own
     # with this placeholder; their presence points at another person's record.
     re.compile(r"\[ID\]"),
     re.compile(r"\b(another|other|different|second)\s+patient", _I),

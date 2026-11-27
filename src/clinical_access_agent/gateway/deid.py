@@ -14,7 +14,7 @@ Two passes:
 
 Placeholders name the kind of value, so the text stays readable: ``[NAME]``,
 ``[DOB]``, ``[MRN]`` and ``[PATIENT_ID]`` for the patient's own data, ``[ID]`` for an
-identifier the gateway does not recognise as the patient's own. Re-identification
+identifier the gateway does not recognize as the patient's own. Re-identification
 is only possible through the ``/identity`` endpoint with a ui token.
 
 Limitation: names that the gateway does not know (relatives, other people) are only
